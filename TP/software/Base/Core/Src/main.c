@@ -57,20 +57,7 @@ void SystemClock_Config(void);
 
 /* Private user code ---------------------------------------------------------*/
 /* USER CODE BEGIN 0 */
-int __io_putchar(int ch)
-{
-	HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-	return ch;
-}
 
-int __io_getchar(void)
-{
-	uint8_t ch = 0;
-	__HAL_UART_CLEAR_OREFLAG(&huart2);
-	HAL_UART_Receive(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-	HAL_UART_Transmit(&huart2, (uint8_t *)&ch, 1, HAL_MAX_DELAY);
-	return ch;
-}
 /* USER CODE END 0 */
 
 /**
@@ -116,6 +103,7 @@ int main(void)
 	/* USER CODE BEGIN WHILE */
 	while (1)
 	{
+		loop();
 		/* USER CODE END WHILE */
 
 		/* USER CODE BEGIN 3 */
