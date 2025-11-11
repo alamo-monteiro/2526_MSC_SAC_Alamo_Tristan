@@ -1,0 +1,8 @@
+../Core/Src/user_interface/shell.c:27:12:is_character_valid	16	static
+../Core/Src/user_interface/shell.c:32:12:is_string_valid	24	static
+../Core/Src/user_interface/shell.c:61:12:sh_help	48	static
+../Core/Src/user_interface/shell.c:76:12:sh_test_list	40	static
+../Core/Src/user_interface/shell.c:96:6:shell_init	24	static
+../Core/Src/user_interface/shell.c:121:5:shell_add	24	static
+../Core/Src/user_interface/shell.c:146:12:shell_exec	64	static
+../Core/Src/user_interface/shell.c:187:5:shell_run	24	static
