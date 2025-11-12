@@ -60,8 +60,8 @@ all: main-build
 main-build: 2526_MSC_NUCLEOG431_MotorControl.elf secondary-outputs
 
 # Tool invocations
-2526_MSC_NUCLEOG431_MotorControl.elf 2526_MSC_NUCLEOG431_MotorControl.map: $(OBJS) $(USER_OBJS) /home/nicolas/STM32CubeIDE/workspace_1.19.0/2526_MSC_NUCLEOG431_MotorControl/STM32G431RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
-	arm-none-eabi-gcc -o "2526_MSC_NUCLEOG431_MotorControl.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"/home/nicolas/STM32CubeIDE/workspace_1.19.0/2526_MSC_NUCLEOG431_MotorControl/STM32G431RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="2526_MSC_NUCLEOG431_MotorControl.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
+2526_MSC_NUCLEOG431_MotorControl.elf 2526_MSC_NUCLEOG431_MotorControl.map: $(OBJS) $(USER_OBJS) C:\Users\noter\2526_MSC_SAC_Alamo_Tristan\TD\2526_MSC_NUCLEOG431_MotorControl\STM32G431RBTX_FLASH.ld makefile objects.list $(OPTIONAL_TOOL_DEPS)
+	arm-none-eabi-gcc -o "2526_MSC_NUCLEOG431_MotorControl.elf" @"objects.list" $(USER_OBJS) $(LIBS) -mcpu=cortex-m4 -T"C:\Users\noter\2526_MSC_SAC_Alamo_Tristan\TD\2526_MSC_NUCLEOG431_MotorControl\STM32G431RBTX_FLASH.ld" --specs=nosys.specs -Wl,-Map="2526_MSC_NUCLEOG431_MotorControl.map" -Wl,--gc-sections -static --specs=nano.specs -mfpu=fpv4-sp-d16 -mfloat-abi=hard -mthumb -Wl,--start-group -lc -lm -Wl,--end-group
 	@echo 'Finished building target: $@'
 	@echo ' '
 
