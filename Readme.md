@@ -1,6 +1,8 @@
 On branche la carte, et on teste le shell.
 
 <img width="518" height="169" alt="CaptureEcranTerminal" src="https://github.com/user-attachments/assets/e3bff7c4-c5d1-4184-9334-f0620aea72f7" />
+
+
 On teste les caractères possibles et les différentes fonctionnalités déjà implémentées.
 
 Timer 1 déjà initialisé
