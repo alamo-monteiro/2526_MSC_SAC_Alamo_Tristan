@@ -6,8 +6,10 @@
  */
 
 #include "app.h"
-
+#include "motor_control/motor.h"
 #include "user_interface/shell.h"
+#include "user_interface/led.h"   // pour led_init()
+
 
 static char shell_uart2_received_char;
 
@@ -21,7 +23,14 @@ void init_device(void){
 
 	// LED
 	led_init();
+    shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
 
+
+    motor_init();
+    if (motor_start() != HAL_OK)
+    {
+        Error_Handler();
+    }
 	// BUTTON
 //	button_init();
 //
