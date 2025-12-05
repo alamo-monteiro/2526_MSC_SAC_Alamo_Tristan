@@ -1,0 +1,6 @@
+../Core/Src/motor_control/motor.c:26:13:motor_shell_printf	156	static
+../Core/Src/motor_control/motor.c:50:24:motor_get_arr	4	static
+../Core/Src/motor_control/motor.c:57:6:motor_set_duty_percent	32	static
+../Core/Src/motor_control/motor.c:78:6:motor_init	8	static
+../Core/Src/motor_control/motor.c:84:19:motor_start	16	static
+../Core/Src/motor_control/motor.c:99:5:sh_speed	48	static
