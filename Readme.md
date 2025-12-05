@@ -101,3 +101,4 @@ TIM1 génère un signal PWM sur CH1/CH1N (bras U) et CH2/CH2N (bras V),
 
 le rapport cyclique sur ces sorties correspond au duty_percent calculé.
 
+Quels problèmes observez vous ?
