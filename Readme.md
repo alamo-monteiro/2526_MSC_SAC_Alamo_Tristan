@@ -41,3 +41,7 @@ Visuellement, on voit bien :
 les deux signaux ne sont jamais hauts en même temps,
 
 un petit “trou” entre les fronts → pas de recouvrement, donc pas de shoot-through.
+
+
+
+Implémentation de la commande speed dans motor.c
