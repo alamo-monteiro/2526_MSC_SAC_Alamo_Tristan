@@ -175,3 +175,71 @@ ce qui est suffisamment lent pour être clairement visible et pour limiter le co
 
 <img width="868" height="768" alt="image" src="https://github.com/user-attachments/assets/da2e7308-4b84-41a3-9e96-8e48b169dc4c" />
 
+Le bloc “Hall current” avec le composant U601 – GO 10-SME/SP3
+
+À gauche : V_Bus_In / V_Bus_Out sur les pins IP+ / IP− → c’est le courant bus DC qui traverse le capteur.
+
+À droite :
+
+Imes = sortie Uout
+
+Uref = sortie Uref
+
+ISO_3.3V et ISO_GND → alim isolée 3,3 V du capteur
+
+En bas, les condos C601, C602, C603 (4,7 nF) font juste du filtrage sur Imes, Uref et l’alim.
+
+Quel courant on mesure ? → le courant de bus DC (entre V_Bus_In et V_Bus_Out) via ce capteur Hall GO 10-SME/SP3.
+
+✅ Capteur / fonction de transfert : c’est ce GO 10-SME/SP3, dont la datasheet donne :
+
+Alim : 3,3 V,
+
+Référence : Uref ≈ 1,65 V,
+
+Sensibilité nominale : 50 mV/A.
+
+La relation est donc du type :
+
+<img width="584" height="63" alt="image" src="https://github.com/user-attachments/assets/8a1e7793-51b6-4a97-a947-c93c2247a544" />
+
+<img width="401" height="108" alt="image" src="https://github.com/user-attachments/assets/5cacaa90-0a0f-44d0-a941-d79a13614eeb" />
+
+
+<img width="1211" height="745" alt="image" src="https://github.com/user-attachments/assets/a57d6f47-238a-465e-b39d-ea752db2b326" />
+
+Hall current → dit quel courant est mesuré et comment (capteur Hall GO 10-SME/SP3, nets Imes / Uref).
+
+MCU Side → explique où ça arrive sur le Nucleo (quelles pins STM32 / ADC).
+
+on lit :
+
+Bus_Imes → va sur PC2 (J103, pin 36)
+
+Bus_V → PA0
+
+U_Imes → PA1
+
+W_Imes → PB0
+
+V_Imes → PB1 (sur le connecteur J104)
+
+Courants mesurés
+
+Courant de bus DC : Bus_Imes
+
+Courant phase U : U_Imes
+
+Courant phase V : V_Imes
+
+Courant phase W : W_Imes
+
+Pins STM32 utilisées pour la mesure de courant (côté Nucleo-G474RE)
+
+Bus_Imes → pin PC2
+
+U_Imes → pin PA1
+
+V_Imes → pin PB1
+
+W_Imes → pin PB0
