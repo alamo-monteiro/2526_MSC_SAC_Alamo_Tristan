@@ -102,3 +102,71 @@ TIM1 génère un signal PWM sur CH1/CH1N (bras U) et CH2/CH2N (bras V),
 le rapport cyclique sur ces sorties correspond au duty_percent calculé.
 
 Quels problèmes observez vous ?
+
+
+Quand on envoie directement une consigne de vitesse élevée (par exemple speed 800 ou speed 1000), le moteur part d’un état arrêté.
+Le rapport cyclique de la PWM passe brutalement à une grande valeur, ce qui provoque :
+
+un courant de démarrage très important (le moteur se comporte presque comme une charge résistive au début, donc I ≈ V/R),
+
+un démarrage très brutal du moteur (à-coups mécaniques, vibrations, bruit),
+
+parfois une chute de tension ou l’activation des protections du hacheur / de l’alimentation.
+
+On observe donc un comportement peu contrôlé et agressif pour le moteur et l’électronique lorsqu’on applique directement une grande consigne de PWM.
+
+Pour pallier à ce problème, on met en place une montée progressive du rapport cyclique (rampe) : au lieu de passer instantanément de 0 % à la valeur de consigne, on augmente le duty-cycle par petits pas jusqu’à atteindre la valeur cible.
+Cela limite le courant de démarrage, adoucit la mise en vitesse du moteur et améliore le confort et la sécurité de fonctionnement.
+
+   
+
+Principe général
+
+La commande speed XXXX ne modifie plus directement les registres de PWM.
+Elle :
+
+convertit XXXX (0 à 1000) en un duty-cycle cible en pourcentage (0 à 100 %),
+
+stocke cette consigne dans une variable globale :
+
+motor_target_duty_percent
+
+Une seconde variable mémorise la valeur réellement appliquée à l’instant courant :
+
+motor_current_duty_percent
+
+
+Une fonction motor_update() est appelée régulièrement dans la boucle principale (while(1) dans main.c).
+
+Son rôle est de faire converger progressivement motor_current_duty_percent vers motor_target_duty_percent :
+
+Si target > current : on augmente current d’un petit pas (par exemple +5 %),
+
+Si target < current : on diminue current d’un petit pas (par exemple –5 %),
+
+On attend un certain temps entre deux pas grâce à l’horloge système (HAL_GetTick()).
+
+À chaque fois que motor_current_duty_percent est mis à jour, la fonction recalcule les valeurs CCR des deux canaux PWM (bras U et bras V) en tenant compte du fonctionnement complémentaire :
+
+ccr_u = (ARR + 1) * current / 100      // bras U
+ccr_v = (ARR + 1) * (100 - current) / 100  // bras V
+
+Paramétrage de la rampe
+
+Dans notre cas, nous avons choisi :
+
+un pas de 5 % :
+
+const uint32_t step_percent = 5U;
+
+un intervalle de 100 ms entre deux pas :
+
+const uint32_t step_delay_ms = 100U;
+
+Ainsi, une montée de 0 % à 80 % prend environ :
+
+80/5=16 pas,
+
+16×100 ms=1,6 s,
+
+ce qui est suffisamment lent pour être clairement visible et pour limiter le courant de démarrage.
