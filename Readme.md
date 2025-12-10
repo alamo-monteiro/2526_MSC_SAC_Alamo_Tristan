@@ -170,3 +170,8 @@ Ainsi, une montée de 0 % à 80 % prend environ :
 16×100 ms=1,6 s,
 
 ce qui est suffisamment lent pour être clairement visible et pour limiter le courant de démarrage.
+
+
+
+<img width="868" height="768" alt="image" src="https://github.com/user-attachments/assets/da2e7308-4b84-41a3-9e96-8e48b169dc4c" />
+
