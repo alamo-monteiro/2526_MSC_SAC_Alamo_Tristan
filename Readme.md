@@ -206,6 +206,27 @@ La relation est donc du type :
 <img width="401" height="108" alt="image" src="https://github.com/user-attachments/assets/5cacaa90-0a0f-44d0-a941-d79a13614eeb" />
 
 
+
+#### 2. Fonction de transfert - Numérisation (ADC)
+Pour traiter cette information dans le STM32, nous devons tenir compte de l'étape de **numérisation**. Le microcontrôleur convertit la tension analogique en un nombre binaire sur **12 bits** (allant de $0$ à $4095$).
+
+**Paramètres du système :**
+* **Sensibilité du capteur ($S$) :** $50\text{ mV/A}$ (soit $0,05\text{ V/A}$).
+* **Résolution de l'ADC :** $2^{12} = 4096$ pas.
+* **Plage de tension :** $0$ à $3,3\text{ V}$.
+
+La tension lue par l'ADC est définie par la relation : $V = \frac{N_{ADC} \times 3,3}{4096}$.
+
+En intégrant la sensibilité du capteur et le décalage de la tension de référence ($U_{ref}$), la fonction de transfert numérique pour obtenir le courant en Ampères est :
+
+$$I_{bus} = \frac{(N_{Imes} - N_{Uref}) \times 3,3}{4096 \times 0,05}$$
+
+Où :
+* **$N_{Imes}$** : Valeur numérique lue sur le canal ADC correspondant à la sortie du capteur.
+* **$N_{Uref}$** : Valeur numérique de la tension de référence (offset du zéro).
+* **$4096$** : Représente la quantification totale sur 12 bits.
+
+
 <img width="1211" height="745" alt="image" src="https://github.com/user-attachments/assets/a57d6f47-238a-465e-b39d-ea752db2b326" />
 
 Hall current → dit quel courant est mesuré et comment (capteur Hall GO 10-SME/SP3, nets Imes / Uref).
