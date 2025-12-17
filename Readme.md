@@ -264,3 +264,10 @@ U_Imes → pin PA1
 V_Imes → pin PB1
 
 W_Imes → pin PB0
+
+
+
+<img width="335" height="298" alt="image" src="https://github.com/user-attachments/assets/1e8fb000-445f-4b8f-b647-2ba05b3d144c" />
+
+On désactive tous les channels pour ne pas bloquer la mesure de l'ADC en pulling
+
