@@ -121,4 +121,6 @@ int shell_add(h_shell_t* h_shell, char* string_func_code, shell_func_pointer_t p
  */
 int shell_run(h_shell_t* h_shell);
 
+
+
 #endif /* SHELL_H_ */

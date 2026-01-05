@@ -6,7 +6,7 @@
  */
 
 #include "user_interface/shell.h"
-
+#include "acquisition/input_analog.h"
 h_shell_t hshell1;
 
 /**
@@ -83,6 +83,9 @@ static int sh_test_list(h_shell_t* h_shell, int argc, char** argv)
 }
 
 
+static int sh_current(h_shell_t* h_shell, int argc, char** argv);
+static int sh_ibus(h_shell_t* h_shell, int argc, char** argv);
+static int sh_adcraw(h_shell_t* h_shell, int argc, char** argv);
 
 
 /**
@@ -104,6 +107,10 @@ void shell_init(h_shell_t* h_shell)
 
 	shell_add(h_shell, "help", sh_help, "Help");
 	shell_add(h_shell, "test", sh_test_list, "Test list");
+	shell_add(h_shell, "current", sh_current, "Display phase currents (mA)");
+	shell_add(h_shell, "ibus", sh_ibus, "read DC bus current (mA)");
+	shell_add(h_shell, "adcraw", sh_adcraw, "show ADC raw values (DMA)");
+
 }
 
 /**
@@ -227,3 +234,55 @@ int shell_run(h_shell_t* h_shell)
 	}
 	return 0;
 }
+
+
+
+
+
+
+static int sh_current(h_shell_t* h_shell, int argc, char** argv)
+{
+    (void)argc; (void)argv;
+
+    int32_t iu_ma = 0;
+    int32_t iv_ma = 0;
+
+    input_analog_get_currents_ma(&iu_ma, &iv_ma);
+
+    int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                        "Current: I_U = %ld mA | I_V = %ld mA\r\n",
+                        (long)iu_ma, (long)iv_ma);
+    h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+    return 0;
+}
+
+static int sh_ibus(h_shell_t* h_shell, int argc, char** argv)
+{
+    (void)argc; (void)argv;
+
+    int32_t iu_ma = 0, iv_ma = 0;
+    input_analog_get_currents_ma(&iu_ma, &iv_ma);
+
+    int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                        "Iu = %ld mA | Iv = %ld mA\r\n",
+                        (long)iu_ma, (long)iv_ma);
+    h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+    return 0;
+}
+
+static int sh_adcraw(h_shell_t* h_shell, int argc, char** argv)
+{
+    (void)argc; (void)argv;
+
+    uint16_t ru=0, rv=0;
+    input_analog_get_raw(&ru, &rv);
+
+    int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                        "ADC raw: ch0=%u | ch1=%u\r\n", (unsigned)ru, (unsigned)rv);
+    h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+    return 0;
+}
+
+
+
+

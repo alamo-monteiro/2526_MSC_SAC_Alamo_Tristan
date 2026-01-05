@@ -9,9 +9,13 @@
 #include "motor_control/motor.h"
 #include "user_interface/shell.h"
 #include "user_interface/led.h"   // pour led_init()
+#include "acquisition/input_analog.h"
+
+
 
 
 static char shell_uart2_received_char;
+
 
 void init_device(void){
 // Initialisation user interface
@@ -23,14 +27,19 @@ void init_device(void){
 
 	// LED
 	led_init();
-    shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
+
+	// Commandes shell
+	shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
+	shell_add(&hshell1, "start", sh_start, "start PWM at 50% (zero speed)");
+	shell_add(&hshell1, "stop",  sh_stop,  "stop PWM outputs");
 
 
     motor_init();
-    if (motor_start() != HAL_OK)
-    {
-        Error_Handler();
-    }
+
+
+    // ACQUISITION ANALOGIQUE (courant)
+    input_analog_init();
+
 	// BUTTON
 //	button_init();
 //

@@ -1,6 +1,10 @@
-../Core/Src/motor_control/motor.c:26:13:motor_shell_printf	5
-../Core/Src/motor_control/motor.c:50:24:motor_get_arr	1
-../Core/Src/motor_control/motor.c:57:6:motor_set_duty_percent	2
-../Core/Src/motor_control/motor.c:78:6:motor_init	1
-../Core/Src/motor_control/motor.c:84:19:motor_start	1
-../Core/Src/motor_control/motor.c:99:5:sh_speed	6
+../Core/Src/motor_control/motor.c:30:13:motor_shell_printf	5
+../Core/Src/motor_control/motor.c:54:24:motor_get_arr	1
+../Core/Src/motor_control/motor.c:62:6:motor_set_duty_percent	2
+../Core/Src/motor_control/motor.c:71:6:motor_update	6
+../Core/Src/motor_control/motor.c:119:6:motor_init	1
+../Core/Src/motor_control/motor.c:127:19:motor_start	1
+../Core/Src/motor_control/motor.c:140:19:motor_stop	1
+../Core/Src/motor_control/motor.c:157:5:sh_speed	6
+../Core/Src/motor_control/motor.c:200:5:sh_start	2
+../Core/Src/motor_control/motor.c:224:5:sh_stop	2

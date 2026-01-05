@@ -19,6 +19,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "dma.h"
 #include "tim.h"
 #include "usart.h"
 #include "gpio.h"
@@ -26,6 +27,8 @@
 /* Private includes ----------------------------------------------------------*/
 /* USER CODE BEGIN Includes */
 #include "app.h"
+#include "acquisition/input_analog.h"
+#include "motor_control/motor.h"
 
 /* USER CODE END Includes */
 
@@ -89,6 +92,7 @@ int main(void)
 
   /* Initialize all configured peripherals */
   MX_GPIO_Init();
+  MX_DMA_Init();
   MX_ADC2_Init();
   MX_ADC1_Init();
   MX_TIM1_Init();
@@ -115,6 +119,12 @@ int main(void)
     /* USER CODE END WHILE */
 
     /* USER CODE BEGIN 3 */
+		motor_update();
+	    // Gestion de la calibration différée de l'ADC
+	    input_analog_task();
+
+	    float Ibus = input_analog_get_bus_current();
+	    (void)Ibus;  // juste pour éviter un warning si tu ne l'utilises pas pour l'instant
 	}
   /* USER CODE END 3 */
 }

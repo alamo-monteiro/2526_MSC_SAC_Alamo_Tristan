@@ -2,7 +2,10 @@
 ../Core/Src/user_interface/shell.c:31:12:is_string_valid	24	static
 ../Core/Src/user_interface/shell.c:60:12:sh_help	48	static
 ../Core/Src/user_interface/shell.c:75:12:sh_test_list	40	static
-../Core/Src/user_interface/shell.c:95:6:shell_init	24	static
-../Core/Src/user_interface/shell.c:120:5:shell_add	24	static
-../Core/Src/user_interface/shell.c:145:12:shell_exec	64	static
-../Core/Src/user_interface/shell.c:186:5:shell_run	24	static
+../Core/Src/user_interface/shell.c:98:6:shell_init	24	static
+../Core/Src/user_interface/shell.c:127:5:shell_add	24	static
+../Core/Src/user_interface/shell.c:152:12:shell_exec	64	static
+../Core/Src/user_interface/shell.c:193:5:shell_run	24	static
+../Core/Src/user_interface/shell.c:243:12:sh_current	48	static
+../Core/Src/user_interface/shell.c:259:12:sh_ibus	48	static
+../Core/Src/user_interface/shell.c:273:12:sh_adcraw	40	static
