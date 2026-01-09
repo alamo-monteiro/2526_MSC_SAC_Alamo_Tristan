@@ -308,5 +308,6 @@ MSC@SAC-TP:/adcraw
 ADC raw: ch0=1908 | ch1=1963
 
 La tendance est bonne mais pas l'échelle des ampères.
-Donc on va faire une calibration 2 points pour ajouter un terme correctif.
+En effet, la fonction de transfert est bonne, mais NUref n’est pas exactement à mi-échelle à cause des offsets capteur + analog front-end + VDDA réel
+Donc on ajoute un terme correctif 
 
