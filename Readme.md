@@ -277,19 +277,36 @@ Acquisition courant via ADC en mode DMA (2 canaux, conversion régulière)
 
 Voici les différentes commandes effectués avec les résultats ci-dessous.
 
-| Étape | Commande    | PWM (duty) | ADC raw ch0 | ADC raw ch1 | Courant affiché (`ibus`)  |
-| ----- | ----------- | ---------: | ----------: | ----------: | ------------------------- |
-| 0     | `ibus`      |        OFF |           0 |           0 | Iu = 0 mA, Iv = 0 mA      |
-| 0’    | `adcraw`    |        OFF |           0 |           0 | —                         |
-| 1     | `start`     |        50% |           — |           — | —                         |
-| 1’    | `ibus`      |        50% |           — |           — | Iu = 1982 mA, Iv = 322 mA |
-| 1’’   | `adcraw`    |        50% |        1969 |        1987 | —                         |
-| 2     | `speed 200` |        20% |           — |           — | Iu = 3062 mA, Iv = 789 mA |
-| 2’    | `adcraw`    |        20% |        2080 |        1989 | —                         |
-| 3     | `speed 300` |        30% |           — |           — | Iu = 3223 mA, Iv = 660 mA |
-| 3’    | `adcraw`    |        30% |        2060 |        1993 | —                         |
-| 4     | `speed 700` |        70% |           — |           — | Iu = 725 mA, Iv = 596 mA  |
-| 4’    | `adcraw`    |        70% |        1884 |        2015 | —                         |
+=> Monsieur Shell v0.2.2 without FreeRTOS <=
+MSC@SAC-TP:/ibus
+Iu = -33000 mA | Iv = -33000 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=0 | ch1=0
+MSC@SAC-TP:/start
+start: PWM enabled at 50% (zero speed, calib en cours)
+MSC@SAC-TP:/ibus
+Iu = 177 mA | Iv = 161 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=1975 | ch1=1980
+MSC@SAC-TP:/speed 200
+speed set: cmd=200 (max=1000) -> duty=20%
+MSC@SAC-TP:/ibus
+Iu = 1369 mA | Iv = 290 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=2063 | ch1=1958
+MSC@SAC-TP:/speed 300
+speed set: cmd=300 (max=1000) -> duty=30%
+MSC@SAC-TP:/ibus
+Iu = 999 mA | Iv = 290 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=2083 | ch1=1990
+MSC@SAC-TP:/speed 700
+speed set: cmd=700 (max=1000) -> duty=70%
+MSC@SAC-TP:/ibus
+Iu = -1547 mA | Iv = -145 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=1908 | ch1=1963
 
-
+La tendance est bonne mais pas l'échelle des ampères.
+Donc on va faire une calibration 2 points pour ajouter un terme correctif.
 
