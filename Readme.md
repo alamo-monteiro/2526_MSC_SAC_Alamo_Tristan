@@ -271,3 +271,25 @@ W_Imes → pin PB0
 
 On désactive tous les channels pour ne pas bloquer la mesure de l'ADC en pulling
 
+
+
+Acquisition courant via ADC en mode DMA (2 canaux, conversion régulière)
+
+Voici les différentes commandes effectués avec les résultats ci-dessous.
+
+| Étape | Commande    | PWM (duty) | ADC raw ch0 | ADC raw ch1 | Courant affiché (`ibus`)  |
+| ----- | ----------- | ---------: | ----------: | ----------: | ------------------------- |
+| 0     | `ibus`      |        OFF |           0 |           0 | Iu = 0 mA, Iv = 0 mA      |
+| 0’    | `adcraw`    |        OFF |           0 |           0 | —                         |
+| 1     | `start`     |        50% |           — |           — | —                         |
+| 1’    | `ibus`      |        50% |           — |           — | Iu = 1982 mA, Iv = 322 mA |
+| 1’’   | `adcraw`    |        50% |        1969 |        1987 | —                         |
+| 2     | `speed 200` |        20% |           — |           — | Iu = 3062 mA, Iv = 789 mA |
+| 2’    | `adcraw`    |        20% |        2080 |        1989 | —                         |
+| 3     | `speed 300` |        30% |           — |           — | Iu = 3223 mA, Iv = 660 mA |
+| 3’    | `adcraw`    |        30% |        2060 |        1993 | —                         |
+| 4     | `speed 700` |        70% |           — |           — | Iu = 725 mA, Iv = 596 mA  |
+| 4’    | `adcraw`    |        70% |        1884 |        2015 | —                         |
+
+
+
