@@ -425,6 +425,10 @@ Iu = -1112 mA | Iv = -96 mA
 MSC@SAC-TP:/
 
 
+<img width="656" height="643" alt="image" src="https://github.com/user-attachments/assets/0f08f765-e637-4f44-8937-59d007501993" />
+
+
+
 Avant cal0 : On a un gros offset
 
 adcraw ~ 1991 / 1982 → ça correspond à ~1.60 V (normal autour de 1.65 V)
