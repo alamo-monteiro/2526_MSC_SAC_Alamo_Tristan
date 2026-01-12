@@ -271,11 +271,17 @@ W_Imes → pin PB0
 
 On désactive tous les channels pour ne pas bloquer la mesure de l'ADC en pulling
 
-
+La mesure de l'ADC en pulling s'est avéré problématique donc on est directement passé à la mesure en passant par un DMA.
 
 Acquisition courant via ADC en mode DMA (2 canaux, conversion régulière)
 
-Voici les différentes commandes effectués avec les résultats ci-dessous.
+Au début, on a simplement voulu mesurer et afficher les courants de phase Iu et Iv via l’ADC.
+
+On lit les deux voies ADC (U et V) via DMA.
+
+On applique la fonction de transfert du capteur (centrée à Uref≈1.65 V)
+
+On affiche le résultat dans le shell (commande ibus / current) :
 
 => Monsieur Shell v0.2.2 without FreeRTOS <=
 MSC@SAC-TP:/ibus
@@ -307,7 +313,136 @@ Iu = -1547 mA | Iv = -145 mA
 MSC@SAC-TP:/adcraw
 ADC raw: ch0=1908 | ch1=1963
 
+Très vite, on a observé des valeurs anormales, par exemple :
+−33000 mA (≈ -33 A)
+Ou des valeurs de l’ordre de 1–2 A au repos
+
+On s’est donc demandé si le problème venait :
+- d’une mauvaise conversion (fonction de transfert)
+- d’un ADC qui ne tourne pas
+- d’un offset capteur / conditionnement / ADC
+- ou d’un bruit lié au PWM
+
+Diagnostic : ajout de adcraw (lecture brute DMA)
+
+Pour savoir si le problème venait de la conversion ou de l’acquisition, on a ajouté une commande adcraw pour afficher directement les valeurs brutes :
+
+Exemple observé :
+Avant start : ch0=0 | ch1=0
+Après start : valeurs autour de ~1980–2000
+
+Conclusion clé :
+
+Quand adcraw = 0 / 0, la conversion donne forcément :
+
+<img width="306" height="83" alt="image" src="https://github.com/user-attachments/assets/d0ed69e3-e117-4a95-ba7e-8d2e52828da2" />
+
+Donc l’erreur “-33000 mA” n’était pas “physique” : c’était un symptôme que l’ADC n’échantillonnait pas (typiquement ADC déclenché par un timer/TRGO pas encore actif).
+
+Deuxième observation : offset non nul même quand ADC fonctionne
+
+Une fois l’ADC “vivant” (raw ≈ 2000), on a vu que :
+Même sans courant “attendu”, ibus affichait par exemple :
+Iu ≈ 1.6 A, Iv ≈ -0.2 A (avant calibration)
+
+Ce type d’erreur est typique d’un offset :
+capteur pas exactement centré à 1.65 V
+offset analogique (ampli / filtre)
+offset ADC
+bruit PWM + couplages
+
+Le prof avait justement indiqué qu’on pouvait ajouter un terme correctif.
+
+Mise en place de la correction : calibration du zéro (commande cal0)
+
+Plutôt que “inventer” un correctif à la main, on a ajouté une procédure propre :
+
+Idée : À “courant nul”, on mesure la tension moyenne réelle du capteur.
+
+On calcule un offset corr_v_offset pour forcer :
+
+Umes+corr=Uref
+
+On a donc créé la commande :
+
+cal0 N : moyenne sur N échantillons → calcule l’offset en mV → l’applique à la conversion.
+
+Validation expérimentale : effet immédiat de cal0
+
+Après start :
+
+Avant calibration :
+
+ibus : Iu = 1676 mA | Iv = -241 mA
+
+cal0 200 :
+
+offU ≈ 53 mV, offV ≈ 56 mV
+
+Après calibration :
+
+ibus : Iu = -16 mA | Iv = -48 mA
+
+✅ Résultat : le zéro est ramené proche de 0, donc la correction fonctionne.
+
 La tendance est bonne mais pas l'échelle des ampères.
 En effet, la fonction de transfert est bonne, mais NUref n’est pas exactement à mi-échelle à cause des offsets capteur + analog front-end + VDDA réel
 Donc on ajoute un terme correctif 
 
+On a 2 termes correctifs différents corr_v_offset_u et corr_v_offset_v pour les 2 ADC
+
+On affiche adcraw + ibus/current
+
+Une fois la fonction de calibration implémentée : 
+
+=> Monsieur Shell v0.2.2 without FreeRTOS <=
+MSC@SAC-TP:/start
+start: PWM enabled at 50% (zero speed, calib en cours)
+MSC@SAC-TP:/ibus
+Iu = 1676 mA | Iv = -241 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=1991 | ch1=1982
+MSC@SAC-TP:/cal0 200
+cal0 ok (N=200) offU=53mV offV=56mV
+MSC@SAC-TP:/ibus
+Iu = -16 mA | Iv = -48 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=1987 | ch1=1981
+MSC@SAC-TP:/speed 200
+speed set: cmd=200 (max=1000) -> duty=20%
+MSC@SAC-TP:/ibus
+Iu = 1289 mA | Iv = -64 mA
+MSC@SAC-TP:/adcraw
+ADC raw: ch0=2070 | ch1=2002
+MSC@SAC-TP:/speed 300
+speed set: cmd=300 (max=1000) -> duty=30%
+MSC@SAC-TP:/ibus
+Iu = 1095 mA | Iv = 322 mA
+MSC@SAC-TP:/speed 700
+speed set: cmd=700 (max=1000) -> duty=70%
+MSC@SAC-TP:/ibus
+Iu = -1112 mA | Iv = -96 mA
+MSC@SAC-TP:/
+
+
+Avant cal0 : On a un gros offset
+
+adcraw ~ 1991 / 1982 → ça correspond à ~1.60 V (normal autour de 1.65 V)
+
+mais ibus donne Iu = 1676 mA (≈ 1.7 A) alors qu'on est à “zéro vitesse”
+Ça veut dire : le “zéro capteur” n’est pas exactement à 1.65 V, donc la formule (Umes - 1.65)/0.05 nous sort un faux courant.
+
+al0 200 : l’offset trouvé est réaliste
+
+offU=53mV, offV=56mV
+50 mV d’erreur sur un capteur à 0.05 V/A = 1 A d’erreur potentielle.
+Donc ça colle avec les ~1.7 A affichés avant correction
+
+Après cal0 : le zéro est (presque) bon
+
+Iu = -16 mA, Iv = -48 mA
+(quelques dizaines de mA d’erreur résiduelle = bruit + quantification ADC + offset restant).
+
+Quand on change le duty : on voit des courants “signés”
+à speed 200 / 300 : Iu devient positif (~1.1–1.3 A)
+à speed 700 : Iu devient négatif (~ -1.1 A)
