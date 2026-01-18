@@ -136,36 +136,24 @@ Le shell reconstruit ensuite la ligne tapée (ex : `speed 600`) et :
 ```c
 shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
 
-3.2 Conversion de l’argument speed en PWM
+### 3.2 Conversion de l’argument speed en PWM
 
-Dans sh_speed, on récupère argv[1] (une chaîne "XXXX") puis :
+Dans la fonction `sh_speed`, le programme récupère `argv[1]` (la chaîne de caractères "XXXX") et applique la logique suivante :
 
-conversion avec strtol() → entier
+1. **Conversion** : `strtol()` $\rightarrow$ entier.
+2. **Saturation** : contrainte de la valeur dans l'intervalle `[0, MOTOR_SPEED_CMD_MAX]`.
+3. **Conversion PWM** : calcul du pourcentage.
+4. **Application** : commande du moteur.
 
-saturation dans l’intervalle : [0, MOTOR_SPEED_CMD_MAX]
+**Exemples de comportement :**
 
-conversion en pourcentage PWM
+| Commande | `raw_value` | `duty_percent` | Conséquence Physique |
+| :--- | :--- | :--- | :--- |
+| `speed 0` | 0 | **0%** | Arrêt. |
+| `speed 500` | 500 | **50%** | Bras U ≈ 50% et bras V ≈ 50%. <br> Tension moyenne U - V ≈ 0V (Freinage / Couple faible). |
+| `speed 1000` | 1000 | **100%** | Vitesse maximale. |
+| `speed 1500` | 1000 **(Saturé)** | **100%** | La valeur est plafonnée à `MOTOR_SPEED_CMD_MAX`. |
 
-application au moteur
-
-Exemples de comportement :
-
-speed 0
-→ raw_value = 0
-→ duty_percent = 0%
-
-speed 500
-→ duty_percent = 50%
-→ bras U ≈ 50% et bras V ≈ 50%
-→ tension moyenne U - V ≈ 0 V (quasi freinage / couple faible)
-
-speed 1000
-→ raw_value = 1000
-→ duty_percent = 100%
-
-speed 1500
-→ saturé à 1000
-→ duty_percent = 100%
 
 Le shell détecte la commande "speed" .
 
