@@ -584,6 +584,18 @@ s_rpm  = (int32_t)delta * 6000 / (int32_t)ENCODER_COUNTS_PER_REV;
 s_mrpm = (int32_t)delta * 6000000 / (int32_t)ENCODER_COUNTS_PER_REV;
 ```
 
+### 7.5 Ajout d’une commande shell : `rpm`
+
+Pour faciliter le debug, on a ajouté une commande shell dédiée :
+
+- `rpm` : affiche la vitesse calculée en **rpm** (et en **mRPM** pour une meilleure résolution).
+
+**Exemple d’utilisation :**
+
+- `speed 700` puis `rpm` → la vitesse affichée varie autour d’une valeur non nulle.
+- L’unité **mRPM** (milli-rpm) permet d’obtenir une lecture plus fine que l’affichage en rpm.
+
+
 ### Problèmes observés et interprétation
 
 Lors des premiers tests, on a observé :
