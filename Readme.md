@@ -582,6 +582,7 @@ s_last_cnt = cnt;
 
 s_rpm  = (int32_t)delta * 6000 / (int32_t)ENCODER_COUNTS_PER_REV;
 s_mrpm = (int32_t)delta * 6000000 / (int32_t)ENCODER_COUNTS_PER_REV;
+```
 
 ### Problèmes observés et interprétation
 
