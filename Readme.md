@@ -154,49 +154,52 @@ Dans la fonction `sh_speed`, le programme récupère `argv[1]` (la chaîne de ca
 | `speed 1000` | 1000 | **100%** | Vitesse maximale. |
 | `speed 1500` | 1000 **(Saturé)** | **100%** | La valeur est plafonnée à `MOTOR_SPEED_CMD_MAX`. |
 
+### 3.3 Application du duty-cycle : de `%` vers les registres du timer (TIM1)
 
-Le shell détecte la commande "speed" .
+La fonction `motor_set_duty_percent()` applique le rapport cyclique calculé aux registres de comparaison du timer.
 
-On récupère argv[1] = "XXXX" et on fait strtol → entier.
+- La valeur `ARR` fixe la **résolution** de la PWM (ici `ARR = 8499` → `8500` pas).
+- Pour un duty de 60%, on obtient typiquement :
 
-On sature à [0, MOTOR_SPEED_CMD_MAX].
+  - `CCR ≈ 0.6 × (ARR + 1)`  
+  - de manière générale : `CCR = duty_percent × (ARR + 1) / 100` (avec saturation entre `0` et `ARR`)
 
-On convertit ça en % de PWM puis on applique au moteur.
+Le timer **TIM1** est configuré à **20 kHz** avec sorties complémentaires et **deadtime** :
+
+- `CH1/CH1N` pilote le **bras U**
+- `CH2/CH2N` pilote le **bras V**
+- Le rapport cyclique sur ces sorties correspond directement au `duty_percent` appliqué.
+
+---
+
+### 3.4 Problème observé : démarrage brutal à forte consigne
+
+Lorsque l’on envoie directement une consigne élevée (ex : `speed 800` ou `speed 1000`) alors que le moteur est à l’arrêt :
+
+- le duty-cycle passe brutalement à une grande valeur,
+- **le courant de démarrage devient très élevé** (à l’arrêt, la f.é.m. du moteur est nulle, le courant est surtout limité par les paramètres électriques du moteur),
+- le démarrage est **brutal** (à-coups mécaniques, vibrations, bruit),
+- on peut observer une **chute de tension** ou l’activation de **protections** (alimentation / puissance).
+
+Ce comportement est donc **peu contrôlé** et potentiellement agressif pour le moteur et l’électronique de puissance.
+
+---
+
+### 3.5 Solution : rampe de duty-cycle (soft-start)
+
+Pour éviter un saut instantané de `0%` vers la consigne, on met en place une **rampe** :
+
+- le duty-cycle augmente par petits pas à chaque période de contrôle,
+- jusqu’à atteindre la valeur cible.
+
+Cela permet :
+
+- de limiter le **courant d’appel**,
+- d’adoucir la mise en vitesse,
+- d’améliorer la sécurité et le confort de fonctionnement.
 
 
-On fait un complémentaire décalé pour faire tourner la MCC
 
-
-Traitement par le shell
-
-HAL_UART_RxCpltCallback() reçoit les caractères → appelle shell_run(&hshell1);
-
-Le shell reconstruit la ligne "speed 600" puis :
-
-découpe en tokens : argv[0] = "speed", argv[1] = "600"
-
-trouve la commande "speed" enregistrée par :
-
-shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
-
-appelle alors la fonction :
-
-sh_speed(&hshell1, argc, argv);
-
-Fonction sh_speed : de XXXX → % PWM
-
-speed 0 → raw_value = 0 → duty_percent = 0 %
-
-speed 500 → duty = 50 % → U ≈ 50 %, V ≈ 50 % → moyenne ≈ 0 V (quasi freinage)
-
-speed 1000 → raw_value = 1000 → duty_percent = 100 %
-
-speed 1500 → saturé à 1000 → duty_percent = 100 %
-
-On a bien 4 PWM actives : CH1/CH1N, CH2/CH2N,
-
-chaque bras est complémentaire avec deadtime,
-et les deux bras sont “décalés” l’un par rapport à l’autre → la tension U−V est vraiment modulée.
 
 Fonction motor_set_duty_percent : % → registres du timer
 
