@@ -1,3 +1,9 @@
+# Rapport d'Implémentation et Validation du Contrôle Moteur (STM32G474)
+
+Ce document résume la configuration du Timer et l'implémentation de la commande de vitesse par Shell pour le contrôle d'un moteur triphasé (MCC/FOC).
+
+---
+
 On branche la carte, et on teste le shell.
 
 <img width="518" height="169" alt="CaptureEcranTerminal" src="https://github.com/user-attachments/assets/e3bff7c4-c5d1-4184-9334-f0620aea72f7" />
@@ -5,8 +11,9 @@ On branche la carte, et on teste le shell.
 
 On teste les caractères possibles et les différentes fonctionnalités déjà implémentées.
 
-Timer 1 déjà initialisé
-clock à 170MHz 
+## 1. Configuration du Timer (TIM1) et du PWM
+
+La configuration du Timer 1 est basée sur la fréquence système de $170 \text{ MHz}$ pour générer une fréquence PWM de $20 \text{ kHz}$ pour les bras de l'onduleur.
 
 Si TIMclk = 170 MHz et f_PWM = 20 kHz ⇒
  (PSC+1)∗(ARR+1)=170e6/20e3=8500
@@ -18,7 +25,23 @@ On a TIM1 clock = 170 MHz (classique sur G474), CKD = 1 → tDTS ≈ 5.882 ns.
 Toujours dans Parameter Settings → PWM Generation Channel 1/2 :
 Pulse (16-bit value) = 0.6 × (ARR+1) = 0.6 × 8500 = 5100
 
-On génère les PWM
+### 1.1. Recap des Paramètres Calculés
+
+| Paramètre | Valeur | Justification |
+| :--- | :--- | :--- |
+| **Fréquence Clock ($f_{TIM}$)** | $170 \text{ MHz}$ | Classique sur G474. |
+| **Fréquence PWM ($f_{PWM}$)** | $20 \text{ kHz}$ | Conforme au cahier des charges. |
+| **ARR (Auto-Reload Register)** | $\mathbf{8499}$ | Calculé pour $\frac{170 \times 10^6}{20 \times 10^3} = 8500$. |
+| **Résolution PWM** | $8500 \text{ pas}$ | $\approx 13$ bits de précision. |
+| **Conception du Pulse (60%)** | $5100$ | $0.6 \times (8499+1)$. |
+
+---
+
+## 2. Validation des Signaux PWM (Oscilloscope)
+
+On génère les PWM.
+
+Les mesures ont été effectuées sur les sorties **CH1/CH1N** et **CH2/CH2N** (Bras U et Bras V).
 
 <img width="800" height="480" alt="tek00003" src="https://github.com/user-attachments/assets/2ce35fbc-7082-4c82-be70-cbba5f1809de" />
 
@@ -38,10 +61,17 @@ L’autre à ~38 %
 Deadtime : la mesure en bas indique 1.000 µs → exactement ce qu’on visait
 Visuellement, on voit bien :
 
-les deux signaux ne sont jamais hauts en même temps,
+La sécurité du pont en H est validée. Visuellement, on observe :
+* Les deux signaux (principal et complémentaire) ne sont **jamais hauts en même temps**.
+* Un petit intervalle de temps (*trou*) entre les fronts de commutation, confirmant l'insertion effective du $\mathbf{1.000 \ \mu s}$ de *Dead Time* et prévenant le *shoot-through*.
 
-un petit “trou” entre les fronts → pas de recouvrement, donc pas de shoot-through.
+### 2.1. Mesures Globales
 
+| Mesure | Valeur Relevée | Statut |
+| :--- | :--- | :--- |
+| **Fréquence** | $\mathbf{20.00 \text{ kHz}}$ | ✅ **OK** (Confirme le cahier des charges). |
+| **Rapports Cycliques** | $\approx 58\%$ et $\approx 38\%$ | ✅ **Cohérent** (La somme $\approx 96\%$, le reste est le *Dead Time*). |
+| **Dead Time** (Temps Mort) | $\mathbf{1.000 \ \mu \text{s}}$ | ✅ **OK** (Exactement la valeur visée pour la sécurité). |
 
 
 Implémentation de la commande speed dans motor.c
