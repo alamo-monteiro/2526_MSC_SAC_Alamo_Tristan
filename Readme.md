@@ -10,66 +10,53 @@ On branche la carte, et on teste le shell.
 
 
 On teste les caractères possibles et les différentes fonctionnalités déjà implémentées.
-
-
 ## 1. Configuration du Timer (TIM1) et du PWM
 
 L’objectif est de configurer **TIM1** pour générer un **PWM à 20 kHz** destiné aux bras de l’onduleur, à partir d’une horloge timer de **170 MHz**.
 
 ### 1.1 Calcul du couple PSC / ARR
 
-On utilise la relation :
+Formule utilisée (timer en comptage classique) :
 
-\[
-f_{PWM}=\frac{TIM_{clk}}{(PSC+1)(ARR+1)}
-\]
+`f_PWM = TIMclk / ((PSC + 1) * (ARR + 1))`
 
 Avec :
-
-- \(TIM_{clk}=170\,\text{MHz}\)
-- \(f_{PWM}=20\,\text{kHz}\)
+- `TIMclk = 170 MHz`
+- `f_PWM = 20 kHz`
 
 Donc :
 
-\[
-(PSC+1)(ARR+1)=\frac{170\times 10^6}{20\times 10^3}=8500
-\]
+`(PSC + 1) * (ARR + 1) = 170e6 / 20e3 = 8500`
 
-Choix simple :
+Choix simple et propre :
+- `PSC = 0`
+- `ARR = 8499`  → résolution PWM = `ARR + 1 = 8500` pas
 
-- **PSC = 0**
-- **ARR = 8499**  → résolution PWM = \(ARR+1 = 8500\) pas
-
-> Résolution équivalente : \(\log_2(8500)\approx 13\) bits (largement > 10 bits).
+> Résolution équivalente ≈ log2(8500) ≈ 13 bits (largement > 10 bits).
 
 ### 1.2 Horloge interne TIM1
 
-- **TIM1 clock = 170 MHz** (classique sur STM32G474)
-- **CKD = 1**
+Sur STM32G474, TIM1 est typiquement cadencé à :
+- `TIM1 clock = 170 MHz`
+- `CKD = 1`
 
-Ainsi :
+On obtient un pas temporel :
 
-\[
-t_{DTS}\approx \frac{1}{170\times 10^6}\approx 5.882\,\text{ns}
-\]
+`t_DTS ≈ 1 / 170e6 ≈ 5.882 ns`
 
 ### 1.3 Réglage du duty cycle (Pulse)
 
 Dans **CubeMX → Parameter Settings → PWM Generation CH1/CH2**, la valeur `Pulse` correspond à :
 
-\[
-CCR = duty \times (ARR+1)
-\]
+`CCR = duty * (ARR + 1)`
 
 Pour un duty initial à **60%** :
 
-\[
-CCR = 0.6 \times 8500 = 5100
-\]
+`CCR = 0.6 * 8500 = 5100`
 
 ✅ Valeur appliquée :
+- `Pulse (16-bit value) = 5100`
 
-- **Pulse (16-bit value) = 5100**
 
 
 
