@@ -499,3 +499,87 @@ Une fois la fonction de calibration implémentée, on affiche `adcraw` + `ibus/c
   - `speed 700` : `Iu` devient négatif (~ -1.1 A)  
     ⇒ signe cohérent avec une mesure référencée à `Uref` (selon le sens instantané du courant dans la phase et le pilotage).
 
+
+## 7. Mesure de vitesse (encodeur incrémental)
+
+L’objectif de cette partie est de mesurer la vitesse de rotation afin de pouvoir déterminer la constante de temps du moteur.  
+On utilise pour cela l’encodeur incrémental monté sur l’arbre, lu par le STM32 via un timer configuré en **Encoder Mode**.
+
+---
+
+### 7.1 Matériel et signaux utilisés
+
+- **Encodeur incrémental** : `1000 PPR` (pulses per revolution) *physiques*.
+- Lecture en quadrature (canaux **A** et **B**) → le timer compte généralement en **x4**.
+- Donc le nombre de counts par tour est :
+
+`CPR = 1000 × 4 = 4000 counts/rev`
+
+- Entrées encodeur sur la carte :
+  - **PA6 = TIM3_CH1** (A)
+  - **PA4 = TIM3_CH2** (B)
+
+---
+
+### 7.2 Principe de mesure (TIM encoder + timer d’échantillonnage)
+
+La mesure se fait en deux étages :
+
+1. **TIM3 en Encoder Mode (hardware)**  
+   Le timer incrémente/décrémente automatiquement son compteur `CNT` en fonction des fronts A/B (pas de polling logiciel).
+
+2. **Timer périodique à 10 ms (100 Hz)**  
+   Un second timer (ex. TIM7) déclenche une interruption toutes les **10 ms**.  
+   Dans cette ISR, on calcule la variation de compteur :
+
+`Δcount = CNT(t) − CNT(t−10ms)`
+
+Puis on convertit en vitesse.
+
+---
+
+### 7.3 Conversion en rpm
+
+Sur une fenêtre `dt = 10 ms`, on obtient :
+
+- Tours par seconde :
+
+`rev/s = Δcount / CPR / dt`
+
+- Donc en rpm :
+
+`rpm = (Δcount / CPR) × (60 / dt)`
+
+Comme `dt = 0.01 s` :
+
+`rpm = Δcount × 6000 / CPR`
+
+Avec `CPR = 4000` :
+
+`rpm = Δcount × 1.5`
+
+(ce qui donne un ordre de grandeur simple : 1 count sur 10 ms ≈ 1.5 rpm)
+
+---
+
+### 7.4 Implémentation logicielle
+
+On a créé un module dédié : `input_encoder.c/.h`.
+
+Fonctions principales :
+
+- `input_encoder_init(htim_enc, htim_sample)` : enregistre les handles des timers (TIM3 et TIM7).
+- `input_encoder_start()` : démarre le TIM en encoder mode + démarre le timer d’échantillonnage en IT.
+- `input_encoder_sample_isr()` : appelée dans l’ISR du timer 10 ms, met à jour la vitesse.
+- `input_encoder_get_rpm()` / `input_encoder_get_mrpm()` : retourne la vitesse calculée.
+
+Extrait de calcul dans l’ISR :
+
+```c
+uint16_t cnt = (uint16_t)__HAL_TIM_GET_COUNTER(s_htim_enc);
+int16_t delta = (int16_t)(cnt - s_last_cnt);
+s_last_cnt = cnt;
+
+s_rpm  = (int32_t)delta * 6000 / (int32_t)ENCODER_COUNTS_PER_REV;
+s_mrpm = (int32_t)delta * 6000000 / (int32_t)ENCODER_COUNTS_PER_REV;
+
