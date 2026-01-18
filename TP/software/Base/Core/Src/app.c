@@ -10,6 +10,9 @@
 #include "user_interface/shell.h"
 #include "user_interface/led.h"   // pour led_init()
 #include "acquisition/input_analog.h"
+#include "tim.h"                       // <-- pour htim3, htim7
+#include "usart.h"                     // <-- pour huart2
+
 
 
 
@@ -39,6 +42,10 @@ void init_device(void){
 
     // ACQUISITION ANALOGIQUE (courant)
     input_analog_init();
+
+    // mesure vitesse
+    input_encoder_init(&htim3, &htim7);
+    input_encoder_start();
 
 	// BUTTON
 //	button_init();

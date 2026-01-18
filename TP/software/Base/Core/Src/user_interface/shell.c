@@ -7,7 +7,13 @@
 
 #include "user_interface/shell.h"
 #include "acquisition/input_analog.h"
+#include <stdlib.h>   // pour atoi (ou strtol)
+#include "acquisition/input_encoder.h"
+
+
 h_shell_t hshell1;
+
+
 
 /**
  * @brief Transmit function for shell driver using UART2
@@ -46,6 +52,8 @@ static int is_string_valid(char* str)
 	}
 	return 1;
 }
+
+
 
 /**
  * @brief Help command implementation.
@@ -86,6 +94,8 @@ static int sh_test_list(h_shell_t* h_shell, int argc, char** argv)
 static int sh_current(h_shell_t* h_shell, int argc, char** argv);
 static int sh_ibus(h_shell_t* h_shell, int argc, char** argv);
 static int sh_adcraw(h_shell_t* h_shell, int argc, char** argv);
+static int sh_cal0(h_shell_t* h_shell, int argc, char** argv);
+static int sh_rpm(h_shell_t* h_shell, int argc, char** argv);
 
 
 /**
@@ -109,7 +119,10 @@ void shell_init(h_shell_t* h_shell)
 	shell_add(h_shell, "test", sh_test_list, "Test list");
 	shell_add(h_shell, "current", sh_current, "Display phase currents (mA)");
 	shell_add(h_shell, "ibus", sh_ibus, "read DC bus current (mA)");
-	shell_add(h_shell, "adcraw", sh_adcraw, "show ADC raw values (DMA)");
+	shell_add(h_shell, "adcraw", sh_adcraw, "Print ADC DMA raw values");
+	shell_add(h_shell, "cal0", sh_cal0, "Calibrate zero current offset: cal0 [N]");
+	shell_add(h_shell, "rpm", sh_rpm, "Read motor speed (rpm)");
+
 
 }
 
@@ -270,19 +283,75 @@ static int sh_ibus(h_shell_t* h_shell, int argc, char** argv)
     return 0;
 }
 
+
+
+
 static int sh_adcraw(h_shell_t* h_shell, int argc, char** argv)
 {
     (void)argc; (void)argv;
 
-    uint16_t ru=0, rv=0;
-    input_analog_get_raw(&ru, &rv);
+    uint16_t ch0 = 0, ch1 = 0;
+    input_analog_get_raw(&ch0, &ch1);
 
     int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
-                        "ADC raw: ch0=%u | ch1=%u\r\n", (unsigned)ru, (unsigned)rv);
+                        "ADC raw: ch0=%u | ch1=%u\r\n", ch0, ch1);
     h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
     return 0;
 }
 
 
 
+static int sh_cal0(h_shell_t* h_shell, int argc, char** argv)
+{
+    uint16_t n = 64;
+    if (argc >= 2)
+    {
+        int tmp = atoi(argv[1]);
+        if (tmp > 0 && tmp <= 2000) n = (uint16_t)tmp;
+    }
+
+    int ret = input_analog_calibrate_zero_current_avg(n);
+
+    if (ret == -2)
+    {
+        int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                            "cal0 ERROR: ADC raw=0 (ADC not running / no trigger). Do 'start' first.\r\n");
+        h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+        return -1;
+    }
+    else if (ret != 0)
+    {
+        int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                            "cal0 ERROR: invalid N\r\n");
+        h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+        return -1;
+    }
+
+    int32_t off_u_mv = 0, off_v_mv = 0;
+    input_analog_get_offsets_mv(&off_u_mv, &off_v_mv);
+
+    int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                        "cal0 ok (N=%u) offU=%ldmV offV=%ldmV\r\n",
+                        n, (long)off_u_mv, (long)off_v_mv);
+    h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+
+    return 0;
+}
+
+
+
+static int sh_rpm(h_shell_t* h_shell, int argc, char** argv)
+{
+    (void)argc; (void)argv;
+
+    int32_t rpm  = input_encoder_get_rpm();
+    int32_t mrpm = input_encoder_get_mrpm();
+
+    int size = snprintf(h_shell->print_buffer, SHELL_PRINT_BUFFER_SIZE,
+                        "Speed: %ld rpm (%ld mRPM)\r\n",
+                        (long)rpm, (long)mrpm);
+
+    h_shell->drv.transmit(h_shell->print_buffer, (uint16_t)size);
+    return 0;
+}
 

@@ -11,7 +11,7 @@
 
 #define ADC_DMA_CHANNELS 2
 
-static volatile uint16_t adc_dma_buffer[ADC_DMA_CHANNELS];
+volatile uint16_t adc_dma_buffer[ADC_DMA_CHANNELS];
 
 // Offsets (si tu veux calibrer un “0A” logiciel)
 static float corr_v_offset_u = 0.0f;
@@ -33,14 +33,7 @@ static inline float voltage_to_current(float u_mes)
 void input_analog_init(void)
 {
     HAL_ADC_Start_DMA(&hadc1, (uint32_t*)adc_dma_buffer, ADC_DMA_CHANNELS);
-
-    // Laisser le DMA remplir quelques conversions (PWM OFF)
-    HAL_Delay(20);
-
-    // Calib zéro courant au repos (PWM OFF)
-    input_analog_calibrate_zero_current();
 }
-
 
 void input_analog_get_currents(float *i_u, float *i_v)
 {
@@ -92,17 +85,71 @@ float input_analog_get_bus_current(void)
     return iu; // ou moyenne, ou bus si tu l’as
 }
 
+
+
+void input_analog_get_raw(uint16_t *ch0, uint16_t *ch1)
+{
+    if (ch0) *ch0 = adc_dma_buffer[0];
+    if (ch1) *ch1 = adc_dma_buffer[1];
+}
+
 void input_analog_get_currents_ma(int32_t *iu_ma, int32_t *iv_ma)
 {
-    float iu, iv;
-    input_analog_get_currents(&iu, &iv);   // ta fonction float interne
+    float iu = 0.0f, iv = 0.0f;
+    input_analog_get_currents(&iu, &iv);
 
     if (iu_ma) *iu_ma = (int32_t)(iu * 1000.0f);
     if (iv_ma) *iv_ma = (int32_t)(iv * 1000.0f);
 }
 
-void input_analog_get_raw(uint16_t *raw_u, uint16_t *raw_v)
+
+
+void input_analog_get_offsets(float *off_u, float *off_v)
 {
-    if (raw_u) *raw_u = adc_dma_buffer[0];
-    if (raw_v) *raw_v = adc_dma_buffer[1];
+    if (off_u) *off_u = corr_v_offset_u;
+    if (off_v) *off_v = corr_v_offset_v;
 }
+
+void input_analog_get_offsets_mv(int32_t *off_u_mv, int32_t *off_v_mv)
+{
+    if (off_u_mv) *off_u_mv = (int32_t)(corr_v_offset_u * 1000.0f);
+    if (off_v_mv) *off_v_mv = (int32_t)(corr_v_offset_v * 1000.0f);
+}
+
+int input_analog_calibrate_zero_current_avg(uint16_t n)
+{
+    if (n == 0) return -1;
+
+    // Check ADC is running
+    uint16_t ch0 = adc_dma_buffer[0];
+    uint16_t ch1 = adc_dma_buffer[1];
+    if (ch0 == 0 && ch1 == 0)
+    {
+        return -2; // ADC not running / no trigger
+    }
+
+    uint32_t acc_u = 0;
+    uint32_t acc_v = 0;
+
+    for (uint16_t k = 0; k < n; k++)
+    {
+        acc_u += adc_dma_buffer[0];
+        acc_v += adc_dma_buffer[1];
+    }
+
+    uint16_t mean_u = (uint16_t)(acc_u / n);
+    uint16_t mean_v = (uint16_t)(acc_v / n);
+
+    float u_u = ((float)mean_u * ADC_VREF) / ADC_MAX;
+    float u_v = ((float)mean_v * ADC_VREF) / ADC_MAX;
+
+    corr_v_offset_u = GO_SME_UREF - u_u;
+    corr_v_offset_v = GO_SME_UREF - u_v;
+
+    return 0;
+}
+
+
+
+
+
