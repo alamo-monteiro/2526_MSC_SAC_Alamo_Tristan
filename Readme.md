@@ -297,9 +297,6 @@ Où :
 * **$N_{Uref}$** : Valeur numérique de la tension de référence (offset du zéro).
 * **$4096$** : Représente la quantification totale sur 12 bits.
 
-
-<img width="1211" height="745" alt="image" src="https://github.com/user-attachments/assets/a57d6f47-238a-465e-b39d-ea752db2b326" />
-
 ### 3) Côté MCU : quelles pins STM32 / ADC reçoivent les mesures ?
 
 D’après le schéma **“MCU Side”** (liaison carte puissance → Nucleo-G474RE), les signaux analogiques de mesure arrivent sur les entrées suivantes :
