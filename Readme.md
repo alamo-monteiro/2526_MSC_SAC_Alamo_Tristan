@@ -222,9 +222,12 @@ Son rôle est de faire converger progressivement `motor_current_duty_percent` ve
 - on impose un délai entre deux pas via l’horloge système (`HAL_GetTick()`)
 
 À chaque mise à jour de `motor_current_duty_percent`, la fonction recalcule les valeurs `CCR` des deux canaux PWM (bras U et bras V) en tenant compte du pilotage différentiel / complémentaire :
-
+```c
 ccr_u = (ARR + 1) * current / 100;           // bras U
+```
+```c
 ccr_v = (ARR + 1) * (100 - current) / 100;   // bras V
+```
 
 #### Paramétrage de la rampe
 
@@ -291,7 +294,7 @@ En bas, les condos C601, C602, C603 (4,7 nF) font juste du filtrage sur Imes, Ur
 
 Quel courant on mesure ? → le courant de bus DC (entre V_Bus_In et V_Bus_Out) via ce capteur Hall GO 10-SME/SP3.
 
-✅ Capteur / fonction de transfert : c’est ce GO 10-SME/SP3, dont la datasheet donne :
+Capteur / fonction de transfert : c’est ce GO 10-SME/SP3, dont la datasheet donne :
 
 Alim : 3,3 V,
 
