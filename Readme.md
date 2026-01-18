@@ -134,7 +134,7 @@ Le shell reconstruit ensuite la ligne tapée (ex : `speed 600`) et :
 2. **Recherche** la commande dans la table enregistrée par :
 
 ```c
-shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
+shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");```
 
 ### 3.2 Conversion de l’argument speed en PWM
 
