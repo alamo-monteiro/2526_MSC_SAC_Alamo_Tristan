@@ -223,7 +223,6 @@ Son rôle est de faire converger progressivement `motor_current_duty_percent` ve
 
 À chaque mise à jour de `motor_current_duty_percent`, la fonction recalcule les valeurs `CCR` des deux canaux PWM (bras U et bras V) en tenant compte du pilotage différentiel / complémentaire :
 
-```c
 ccr_u = (ARR + 1) * current / 100;           // bras U
 ccr_v = (ARR + 1) * (100 - current) / 100;   // bras V
 
