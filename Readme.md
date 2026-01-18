@@ -300,89 +300,79 @@ Où :
 
 <img width="1211" height="745" alt="image" src="https://github.com/user-attachments/assets/a57d6f47-238a-465e-b39d-ea752db2b326" />
 
-Hall current → dit quel courant est mesuré et comment (capteur Hall GO 10-SME/SP3, nets Imes / Uref).
+### 3) Côté MCU : quelles pins STM32 / ADC reçoivent les mesures ?
 
-MCU Side → explique où ça arrive sur le Nucleo (quelles pins STM32 / ADC).
+D’après le schéma **“MCU Side”** (liaison carte puissance → Nucleo-G474RE), les signaux analogiques de mesure arrivent sur les entrées suivantes :
 
-on lit :
+<img width="1211" height="745" alt="MCU Side - Nucleo connections" src="https://github.com/user-attachments/assets/a57d6f47-238a-465e-b39d-ea752db2b326" />
 
-Bus_Imes → va sur PC2 (J103, pin 36)
+On lit directement sur le schéma :
 
-Bus_V → PA0
+- `Bus_Imes` → **PC2** (connecteur **J103**, pin **36**)  
+- `U_Imes` → **PA1**  
+- `V_Imes` → **PB1** (connecteur **J104**)  
+- `W_Imes` → **PB0**  
+- (tension bus) `Bus_V` → **PA0**
 
-U_Imes → PA1
+---
 
-W_Imes → PB0
+### 4) Courants mesurés
 
-V_Imes → PB1 (sur le connecteur J104)
+Le système permet de mesurer plusieurs courants (bus + phases) :
 
-Courants mesurés
+- **Courant de bus DC** : `Bus_Imes`  
+- **Courant phase U** : `U_Imes`  
+- **Courant phase V** : `V_Imes`  
+- **Courant phase W** : `W_Imes`
 
-Courant de bus DC : Bus_Imes
+---
 
-Courant phase U : U_Imes
+### 5) Récapitulatif des pins STM32 utilisées (Nucleo-G474RE)
 
-Courant phase V : V_Imes
-
-Courant phase W : W_Imes
-
-Pins STM32 utilisées pour la mesure de courant (côté Nucleo-G474RE)
-
-Bus_Imes → pin PC2
-
-U_Imes → pin PA1
-
-V_Imes → pin PB1
-
-W_Imes → pin PB0
+| Grandeur mesurée | Net KiCad | Pin STM32 |
+|---|---|---|
+| Courant bus DC | `Bus_Imes` | **PC2** |
+| Courant phase U | `U_Imes` | **PA1** |
+| Courant phase V | `V_Imes` | **PB1** |
+| Courant phase W | `W_Imes` | **PB0** |
+| Tension bus (info) | `Bus_V` | **PA0** |
 
 
+### 6) Acquisition du courant via ADC en DMA (2 canaux)
 
-<img width="335" height="298" alt="image" src="https://github.com/user-attachments/assets/1e8fb000-445f-4b8f-b647-2ba05b3d144c" />
+La mesure de l’ADC en **polling** s’est avérée peu exploitable dans notre cas (comportement instable / difficile à synchroniser). Nous sommes donc passés directement à une acquisition **ADC + DMA** sur **2 canaux** (phases U et V), avec conversion régulière.
 
-On désactive tous les channels pour ne pas bloquer la mesure de l'ADC en pulling
+#### 6.1 Principe
 
-La mesure de l'ADC en pulling s'est avéré problématique donc on est directement passé à la mesure en passant par un DMA.
+L’objectif initial est simple : **mesurer et afficher les courants de phase `Iu` et `Iv`**.
 
-Acquisition courant via ADC en mode DMA (2 canaux, conversion régulière)
+- Lecture des deux voies ADC (`U_Imes` et `V_Imes`) via **DMA** dans un buffer circulaire.
+- Conversion des valeurs brutes en tension, puis en courant via la fonction de transfert (capteur centré autour de `Uref ≈ 1.65 V`).
+- Affichage dans le shell :
+  - `adcraw` → affiche les valeurs brutes DMA
+  - `ibus` / `current` → affiche les courants calculés (mA)
 
-Au début, on a simplement voulu mesurer et afficher les courants de phase Iu et Iv via l’ADC.
+#### 6.2 Observations expérimentales (résultats bruts + courants)
 
-On lit les deux voies ADC (U et V) via DMA.
+> **Remarque :** avant de démarrer la PWM (`start`), les valeurs DMA sont à zéro et le courant calculé est incohérent (ex : `-33000 mA`). Dès que la PWM est active, les mesures deviennent réalistes.
 
-On applique la fonction de transfert du capteur (centrée à Uref≈1.65 V)
+| Condition | Commande | ADC raw (ch0/ch1) | Courants affichés |
+|---|---|---:|---:|
+| Avant `start` | `adcraw` / `ibus` | `0 / 0` | `-33000 / -33000 mA` |
+| PWM activée (0 speed) | `start` puis `adcraw` / `ibus` | `1975 / 1980` | `177 / 161 mA` |
+| PWM 20% | `speed 200` | `2063 / 1958` | `1369 / 290 mA` |
+| PWM 30% | `speed 300` | `2083 / 1990` | `999 / 290 mA` |
+| PWM 70% | `speed 700` | `1908 / 1963` | `-1547 / -145 mA` |
 
-On affiche le résultat dans le shell (commande ibus / current) :
+#### 6.3 Interprétation rapide
 
-=> Monsieur Shell v0.2.2 without FreeRTOS <=
-MSC@SAC-TP:/ibus
-Iu = -33000 mA | Iv = -33000 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=0 | ch1=0
-MSC@SAC-TP:/start
-start: PWM enabled at 50% (zero speed, calib en cours)
-MSC@SAC-TP:/ibus
-Iu = 177 mA | Iv = 161 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=1975 | ch1=1980
-MSC@SAC-TP:/speed 200
-speed set: cmd=200 (max=1000) -> duty=20%
-MSC@SAC-TP:/ibus
-Iu = 1369 mA | Iv = 290 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=2063 | ch1=1958
-MSC@SAC-TP:/speed 300
-speed set: cmd=300 (max=1000) -> duty=30%
-MSC@SAC-TP:/ibus
-Iu = 999 mA | Iv = 290 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=2083 | ch1=1990
-MSC@SAC-TP:/speed 700
-speed set: cmd=700 (max=1000) -> duty=70%
-MSC@SAC-TP:/ibus
-Iu = -1547 mA | Iv = -145 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=1908 | ch1=1963
+- **ADC raw = 0** avant `start` : l’ADC/DMA n’est pas encore “alimenté” par une acquisition valide (pas de déclenchement / pas de conversions effectives).  
+  → le calcul de courant devient donc absurde (offset énorme).
+- Une fois la PWM démarrée, les valeurs brutes se stabilisent autour de ~2000 (cohérent avec une mesure centrée proche de 1.65 V sur un ADC 12 bits).
+- À fort duty (`speed 700`), le signe peut devenir négatif : c’est cohérent si le courant instantané mesuré passe de l’autre côté de `Uref` (ou si les phases changent de sens selon le pilotage différentiel).
+
+Ces constats nous ont motivés à ajouter ensuite une **calibration d’offset à 0A** (`cal0`) pour annuler l’erreur résiduelle de centrage autour de `Uref`.
+
 
 Très vite, on a observé des valeurs anormales, par exemple :
 −33000 mA (≈ -33 A)
