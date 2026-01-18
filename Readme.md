@@ -278,6 +278,7 @@ La relation donnée par la datasheet est :
 
 ```text
 U(Imes) - U(Uref) = S * Ibus      avec S ≈ 0.05 V/A
+```
 
 <img width="401" height="108" alt="image" src="https://github.com/user-attachments/assets/5cacaa90-0a0f-44d0-a941-d79a13614eeb" />
 
