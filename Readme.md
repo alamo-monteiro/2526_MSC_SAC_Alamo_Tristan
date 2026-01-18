@@ -250,61 +250,34 @@ $$16 \times 100\text{ ms} = 1.6\text{ s}$$
 
 > **Note :** Ce réglage est suffisamment lent pour être clairement visible et permet de limiter le courant de démarrage (*soft-start*).
 
+## Mesure de courant
 
+### 1) Quel(s) courant(s) doit-on mesurer ?
 
+À partir du schéma KiCad (bloc **Hall current**, composant **U601 – GO 10-SME/SP3**) :
 
+- Les broches **IP+ / IP−** sont insérées *en série* entre **V_Bus_In** et **V_Bus_Out**.
+- Le courant qui traverse le capteur est donc **le courant du bus DC** : **Ibus** (courant consommé/fourni par l’onduleur côté alimentation).
 
-Paramétrage de la rampe
+>  Courant mesuré par ce bloc : **Ibus (courant bus DC)**
 
-Dans notre cas, nous avons choisi :
+Illustration (extrait schéma KiCad) :  
+<img width="868" height="768" alt="Hall current - KiCad" src="https://github.com/user-attachments/assets/da2e7308-4b84-41a3-9e96-8e48b169dc4c" />
 
-un pas de 5 % :
+---
 
-const uint32_t step_percent = 5U;
+### 2) Fonction de transfert du capteur (datasheet)
 
-un intervalle de 100 ms entre deux pas :
+Le capteur **GO 10-SME/SP3** est alimenté en **3.3 V isolé** (**ISO_3.3V / ISO_GND**) et fournit :
 
-const uint32_t step_delay_ms = 100U;
+- **Uref** : tension de référence (typiquement ~1.65 V, soit Vcc/2)
+- **Imes** : tension image du courant (sortie analogique)
+- Sensibilité nominale : **S ≈ 50 mV/A**
 
-Ainsi, une montée de 0 % à 80 % prend environ :
+La relation donnée par la datasheet est :
 
-80/5=16 pas,
-
-16×100 ms=1,6 s,
-
-ce qui est suffisamment lent pour être clairement visible et pour limiter le courant de démarrage.
-
-
-
-<img width="868" height="768" alt="image" src="https://github.com/user-attachments/assets/da2e7308-4b84-41a3-9e96-8e48b169dc4c" />
-
-Le bloc “Hall current” avec le composant U601 – GO 10-SME/SP3
-
-À gauche : V_Bus_In / V_Bus_Out sur les pins IP+ / IP− → c’est le courant bus DC qui traverse le capteur.
-
-À droite :
-
-Imes = sortie Uout
-
-Uref = sortie Uref
-
-ISO_3.3V et ISO_GND → alim isolée 3,3 V du capteur
-
-En bas, les condos C601, C602, C603 (4,7 nF) font juste du filtrage sur Imes, Uref et l’alim.
-
-Quel courant on mesure ? → le courant de bus DC (entre V_Bus_In et V_Bus_Out) via ce capteur Hall GO 10-SME/SP3.
-
-Capteur / fonction de transfert : c’est ce GO 10-SME/SP3, dont la datasheet donne :
-
-Alim : 3,3 V,
-
-Référence : Uref ≈ 1,65 V,
-
-Sensibilité nominale : 50 mV/A.
-
-La relation est donc du type :
-
-<img width="584" height="63" alt="image" src="https://github.com/user-attachments/assets/8a1e7793-51b6-4a97-a947-c93c2247a544" />
+```text
+U(Imes) - U(Uref) = S * Ibus      avec S ≈ 0.05 V/A
 
 <img width="401" height="108" alt="image" src="https://github.com/user-attachments/assets/5cacaa90-0a0f-44d0-a941-d79a13614eeb" />
 
