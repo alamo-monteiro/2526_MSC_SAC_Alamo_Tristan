@@ -411,44 +411,66 @@ Ce type d’erreur est typique d’un **offset** :
 - bruit PWM + couplages (mesure non parfaitement synchrone / parasites)
 
 Le professeur avait justement indiqué qu’on pouvait ajouter un **terme correctif** : cela nous a menés à mettre en place une **calibration à 0 A** via la commande `cal0`, afin de recalculer automatiquement l’offset et recentrer la mesure autour de `Uref`.
+### 6.4 Mise en place de la correction : calibration du zéro (commande `cal0`)
 
-Mise en place de la correction : calibration du zéro (commande cal0)
+Plutôt que “deviner” un correctif à la main, on a mis en place une procédure de calibration simple et reproductible.
 
-Plutôt que “inventer” un correctif à la main, on a ajouté une procédure propre :
+#### 6.4.1 Principe
 
-Idée : À “courant nul”, on mesure la tension moyenne réelle du capteur.
+L’idée est la suivante :
 
-On calcule un offset corr_v_offset pour forcer :
+- À **courant nul**, on mesure la **tension réelle** délivrée par le capteur (moyennée sur plusieurs échantillons).
+- On calcule ensuite un **offset** `corr_v_offset` afin de forcer la condition :
 
-Umes+corr=Uref
+`Umes + corr_v_offset = Uref`
 
-On a donc créé la commande :
+Ainsi, la conversion courant est recentrée correctement autour de la référence.
 
-cal0 N : moyenne sur N échantillons → calcule l’offset en mV → l’applique à la conversion.
+---
 
-Validation expérimentale : effet immédiat de cal0
+#### 6.4.2 Commande `cal0`
 
-Après start :
+On a ajouté la commande :
 
-Avant calibration :
+- `cal0 N` : moyenne sur **N échantillons** → calcule un offset (en mV) → applique cet offset dans la conversion.
 
-ibus : Iu = 1676 mA | Iv = -241 mA
+Concrètement, on utilise **deux offsets indépendants**, car les deux voies ADC peuvent avoir des erreurs différentes :
 
-cal0 200 :
+- `corr_v_offset_u` pour la voie U
+- `corr_v_offset_v` pour la voie V
 
-offU ≈ 53 mV, offV ≈ 56 mV
+---
 
-Après calibration :
+#### 6.4.3 Validation expérimentale : effet immédiat de `cal0`
 
-ibus : Iu = -16 mA | Iv = -48 mA
+Une fois la PWM lancée (`start`), on observe :
 
-✅ Résultat : le zéro est ramené proche de 0, donc la correction fonctionne.
+**Avant calibration :**
+- `ibus : Iu = 1676 mA | Iv = -241 mA`
 
-La tendance est bonne mais pas l'échelle des ampères.
-En effet, la fonction de transfert est bonne, mais NUref n’est pas exactement à mi-échelle à cause des offsets capteur + analog front-end + VDDA réel
-Donc on ajoute un terme correctif 
+**Calibration :**
+- `cal0 200`
+- offsets calculés : `offU ≈ 53 mV`, `offV ≈ 56 mV`
 
-On a 2 termes correctifs différents corr_v_offset_u et corr_v_offset_v pour les 2 ADC
+**Après calibration :**
+- `ibus : Iu = -16 mA | Iv = -48 mA`
+
+**Résultat :** le “zéro courant” est ramené proche de **0 mA**, donc la correction d’offset fonctionne.
+
+---
+
+#### 6.4.4 Interprétation
+
+La tendance est correcte : l’offset est bien compensé.
+
+L’erreur initiale vient du fait que, même si la fonction de transfert du capteur est correcte, la valeur numérique associée à `Uref` (**NUref**) n’est pas exactement à mi-échelle (2048) en pratique, à cause de :
+
+- l’offset intrinsèque du capteur,
+- les décalages/offsets du front-end analogique,
+- la valeur réelle de `VDDA` (pas exactement 3.3 V),
+- les erreurs internes de l’ADC.
+
+D’où l’intérêt d’ajouter un **terme correctif** logiciel, via deux offsets séparés (`corr_v_offset_u` et `corr_v_offset_v`) adaptés à chaque canal.
 
 On affiche adcraw + ibus/current
 
