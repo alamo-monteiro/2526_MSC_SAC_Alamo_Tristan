@@ -361,55 +361,56 @@ L’objectif initial est simple : **mesurer et afficher les courants de phase `I
 | PWM 30% | `speed 300` | `2083 / 1990` | `999 / 290 mA` |
 | PWM 70% | `speed 700` | `1908 / 1963` | `-1547 / -145 mA` |
 
-#### 6.3 Interprétation rapide
-
-- **ADC raw = 0** avant `start` : l’ADC/DMA n’est pas encore “alimenté” par une acquisition valide (pas de déclenchement / pas de conversions effectives).  
-  → le calcul de courant devient donc absurde (offset énorme).
-- Une fois la PWM démarrée, les valeurs brutes se stabilisent autour de ~2000 (cohérent avec une mesure centrée proche de 1.65 V sur un ADC 12 bits).
-- À fort duty (`speed 700`), le signe peut devenir négatif : c’est cohérent si le courant instantané mesuré passe de l’autre côté de `Uref` (ou si les phases changent de sens selon le pilotage différentiel).
-
-Ces constats nous ont motivés à ajouter ensuite une **calibration d’offset à 0A** (`cal0`) pour annuler l’erreur résiduelle de centrage autour de `Uref`.
-
+#### 6.3 Interprétation et diagnostic (ADC/DMA + offset)
 
 Très vite, on a observé des valeurs anormales, par exemple :
-−33000 mA (≈ -33 A)
-Ou des valeurs de l’ordre de 1–2 A au repos
+
+- `-33000 mA` (≈ **-33 A**)
+- ou encore des valeurs de l’ordre de **1–2 A au repos**
 
 On s’est donc demandé si le problème venait :
-- d’une mauvaise conversion (fonction de transfert)
-- d’un ADC qui ne tourne pas
-- d’un offset capteur / conditionnement / ADC
-- ou d’un bruit lié au PWM
 
-Diagnostic : ajout de adcraw (lecture brute DMA)
+- d’une **mauvaise conversion** (fonction de transfert)
+- d’un **ADC/DMA qui ne tourne pas**
+- d’un **offset** (capteur / conditionnement / ADC)
+- ou d’un **bruit lié au PWM**
 
-Pour savoir si le problème venait de la conversion ou de l’acquisition, on a ajouté une commande adcraw pour afficher directement les valeurs brutes :
+---
 
-Exemple observé :
-Avant start : ch0=0 | ch1=0
-Après start : valeurs autour de ~1980–2000
+### 6.3.1 Diagnostic : ajout de `adcraw` (lecture brute DMA)
 
-Conclusion clé :
+Pour savoir si le problème venait de la conversion ou de l’acquisition, on a ajouté une commande `adcraw` afin d’afficher **directement les valeurs brutes** du buffer DMA.
 
-Quand adcraw = 0 / 0, la conversion donne forcément :
+**Exemples observés :**
+
+- Avant `start` : `ch0 = 0 | ch1 = 0`
+- Après `start` : valeurs autour de `~1980–2000`
+
+**Conclusion clé :**
+
+Quand `adcraw = 0 / 0`, la conversion donne forcément :
 
 <img width="306" height="83" alt="image" src="https://github.com/user-attachments/assets/d0ed69e3-e117-4a95-ba7e-8d2e52828da2" />
 
-Donc l’erreur “-33000 mA” n’était pas “physique” : c’était un symptôme que l’ADC n’échantillonnait pas (typiquement ADC déclenché par un timer/TRGO pas encore actif).
+Donc l’erreur `-33000 mA` n’était pas un phénomène “physique” : c’était le symptôme que l’ADC **n’échantillonnait pas** (cas typique : ADC déclenché par un timer / TRGO pas encore actif, ou DMA non lancé avant la séquence `start`).
 
-Deuxième observation : offset non nul même quand ADC fonctionne
+---
 
-Une fois l’ADC “vivant” (raw ≈ 2000), on a vu que :
-Même sans courant “attendu”, ibus affichait par exemple :
-Iu ≈ 1.6 A, Iv ≈ -0.2 A (avant calibration)
+### 6.3.2 Deuxième observation : offset non nul même quand l’ADC fonctionne
 
-Ce type d’erreur est typique d’un offset :
-capteur pas exactement centré à 1.65 V
-offset analogique (ampli / filtre)
-offset ADC
-bruit PWM + couplages
+Une fois l’ADC “vivant” (raw ≈ 2000), on a constaté que même sans courant “attendu”, `ibus` affichait par exemple :
 
-Le prof avait justement indiqué qu’on pouvait ajouter un terme correctif.
+- `Iu ≈ 1.6 A`
+- `Iv ≈ -0.2 A`
+
+Ce type d’erreur est typique d’un **offset** :
+
+- capteur pas exactement centré à `Uref = 1.65 V`
+- offset analogique (filtre / ampli / conditionnement)
+- offset ADC (erreurs de gain/offset)
+- bruit PWM + couplages (mesure non parfaitement synchrone / parasites)
+
+Le professeur avait justement indiqué qu’on pouvait ajouter un **terme correctif** : cela nous a menés à mettre en place une **calibration à 0 A** via la commande `cal0`, afin de recalculer automatiquement l’offset et recentrer la mesure autour de `Uref`.
 
 Mise en place de la correction : calibration du zéro (commande cal0)
 
