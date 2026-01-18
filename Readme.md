@@ -70,6 +70,41 @@ Pour un duty initial à **60%** :
 
 ---
 
+## 2. Validation des signaux PWM (oscilloscope)
+
+Une fois les PWM générés, nous avons vérifié leur comportement à l’oscilloscope sur les sorties :
+- **CH1 / CH1N** (bras **U**)
+- **CH2 / CH2N** (bras **V**)
+
+<img width="800" height="480" alt="tek00003" src="https://github.com/user-attachments/assets/2ce35fbc-7082-4c82-be70-cbba5f1809de" />
+
+<img width="800" height="480" alt="tek00002" src="https://github.com/user-attachments/assets/5d56fa61-3f7d-4caf-a7a3-38229f9de34a" />
+
+### 2.1 Résultats observés
+
+D’après les captures :
+
+- **Fréquence mesurée : 20.00 kHz**  
+  → conforme au cahier des charges.
+
+- **Rapports cycliques mesurés :**
+  - une voie ≈ **58 %**
+  - l’autre ≈ **38 %**
+
+  → c’est cohérent : ce sont les deux signaux **complémentaires**.  
+  On observe que `58% + 38% ≈ 96%` : l’écart restant correspond au **dead-time**.  
+  Pour une consigne théorique de **60%**, obtenir **~58%** est normal (quantification due à `ARR` fini + dead-time).
+
+- **Dead-time mesuré : 1.000 µs**  
+  → exactement la valeur visée.
+
+### 2.2 Validation de la sécurité (shoot-through)
+
+La sécurité du pont en H est validée : visuellement on constate que :
+- les deux signaux (principal et complémentaire) ne sont **jamais à l’état haut en même temps** ;
+- on observe un petit “trou” entre les commutations, ce qui confirme l’insertion effective du **dead-time de 1.000 µs** et empêche le **shoot-through**.
+
+
 ## 2. Validation des Signaux PWM (Oscilloscope)
 
 On génère les PWM.
