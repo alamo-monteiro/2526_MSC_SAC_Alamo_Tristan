@@ -105,35 +105,8 @@ La sécurité du pont en H est validée : visuellement on constate que :
 - on observe un petit “trou” entre les commutations, ce qui confirme l’insertion effective du **dead-time de 1.000 µs** et empêche le **shoot-through**.
 
 
-## 2. Validation des Signaux PWM (Oscilloscope)
 
-On génère les PWM.
-
-Les mesures ont été effectuées sur les sorties **CH1/CH1N** et **CH2/CH2N** (Bras U et Bras V).
-
-<img width="800" height="480" alt="tek00003" src="https://github.com/user-attachments/assets/2ce35fbc-7082-4c82-be70-cbba5f1809de" />
-
-<img width="800" height="480" alt="tek00002" src="https://github.com/user-attachments/assets/5d56fa61-3f7d-4caf-a7a3-38229f9de34a" />
-
-D'après la capture : 
-
-Fréquence : 20.00 kHz → pile le cahier des charges
-
-Rapports cycliques :
-
-Une voie à ~58 %
-
-L’autre à ~38 %
-→ c’est cohérent : ce sont les deux complémentaires (58 % + 38 % ≈ 96 %, le reste étant le deadtime). Pour un “60 %” de consigne, 58 % c’est normal avec la quantification (ARR fini)
-
-Deadtime : la mesure en bas indique 1.000 µs → exactement ce qu’on visait
-Visuellement, on voit bien :
-
-La sécurité du pont en H est validée. Visuellement, on observe :
-* Les deux signaux (principal et complémentaire) ne sont **jamais hauts en même temps**.
-* Un petit intervalle de temps (*trou*) entre les fronts de commutation, confirmant l'insertion effective du $\mathbf{1.000 \ \mu s}$ de *Dead Time* et prévenant le *shoot-through*.
-
-### 2.1. Mesures Globales
+### 2.3. Mesures Globales Récap
 
 | Mesure | Valeur Relevée | Statut |
 | :--- | :--- | :--- |
@@ -141,8 +114,58 @@ La sécurité du pont en H est validée. Visuellement, on observe :
 | **Rapports Cycliques** | $\approx 58\%$ et $\approx 38\%$ | ✅ **Cohérent** (La somme $\approx 96\%$, le reste est le *Dead Time*). |
 | **Dead Time** (Temps Mort) | $\mathbf{1.000 \ \mu \text{s}}$ | ✅ **OK** (Exactement la valeur visée pour la sécurité). |
 
+## 3. Implémentation de la commande `speed` (pilotage PWM)
 
-Implémentation de la commande speed dans motor.c
+Cette étape consiste à implémenter une commande shell `speed` permettant de fixer une consigne (0–1000) convertie en **duty cycle PWM** appliqué au moteur.
+
+### 3.1 Chaîne de traitement côté shell
+
+La réception UART est gérée caractère par caractère via l’interruption :
+
+- `HAL_UART_RxCpltCallback()` reçoit les caractères
+- puis appelle `shell_run(&hshell1);`
+
+Le shell reconstruit ensuite la ligne tapée (ex : `speed 600`) et :
+
+1. **Tokenise** la commande :
+   - `argv[0] = "speed"`
+   - `argv[1] = "600"`
+
+2. **Recherche** la commande dans la table enregistrée par :
+
+```c
+shell_add(&hshell1, "speed", sh_speed, "set motor speed: speed 0-1000");
+
+3.2 Conversion de l’argument speed en PWM
+
+Dans sh_speed, on récupère argv[1] (une chaîne "XXXX") puis :
+
+conversion avec strtol() → entier
+
+saturation dans l’intervalle : [0, MOTOR_SPEED_CMD_MAX]
+
+conversion en pourcentage PWM
+
+application au moteur
+
+Exemples de comportement :
+
+speed 0
+→ raw_value = 0
+→ duty_percent = 0%
+
+speed 500
+→ duty_percent = 50%
+→ bras U ≈ 50% et bras V ≈ 50%
+→ tension moyenne U - V ≈ 0 V (quasi freinage / couple faible)
+
+speed 1000
+→ raw_value = 1000
+→ duty_percent = 100%
+
+speed 1500
+→ saturé à 1000
+→ duty_percent = 100%
 
 Le shell détecte la commande "speed" .
 
