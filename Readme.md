@@ -58,24 +58,6 @@ Pour un duty initial à **60%** :
 - `Pulse (16-bit value) = 5100`
 
 
-
-
-## 1. Configuration du Timer (TIM1) et du PWM
-
-
-
-La configuration du Timer 1 est basée sur la fréquence système de $170 \text{ MHz}$ pour générer une fréquence PWM de $20 \text{ kHz}$ pour les bras de l'onduleur.
-
-Si TIMclk = 170 MHz et f_PWM = 20 kHz ⇒
- (PSC+1)∗(ARR+1)=170e6/20e3=8500
-Choix simple et propre :
-PSC = 0
-ARR = 8499 → résolution = ARR+1 = 8500 (~13 bits, > 10 bits)
-On a TIM1 clock = 170 MHz (classique sur G474), CKD = 1 → tDTS ≈ 5.882 ns.
-
-Toujours dans Parameter Settings → PWM Generation Channel 1/2 :
-Pulse (16-bit value) = 0.6 × (ARR+1) = 0.6 × 8500 = 5100
-
 ### 1.1. Recap des Paramètres Calculés
 
 | Paramètre | Valeur | Justification |
