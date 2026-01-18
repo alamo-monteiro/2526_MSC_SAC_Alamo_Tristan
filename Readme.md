@@ -472,62 +472,30 @@ L’erreur initiale vient du fait que, même si la fonction de transfert du capt
 
 D’où l’intérêt d’ajouter un **terme correctif** logiciel, via deux offsets séparés (`corr_v_offset_u` et `corr_v_offset_v`) adaptés à chaque canal.
 
-On affiche adcraw + ibus/current
+#### 6.4.5 Validation expérimentale (logs console)
 
-Une fois la fonction de calibration implémentée : 
-
-=> Monsieur Shell v0.2.2 without FreeRTOS <=
-MSC@SAC-TP:/start
-start: PWM enabled at 50% (zero speed, calib en cours)
-MSC@SAC-TP:/ibus
-Iu = 1676 mA | Iv = -241 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=1991 | ch1=1982
-MSC@SAC-TP:/cal0 200
-cal0 ok (N=200) offU=53mV offV=56mV
-MSC@SAC-TP:/ibus
-Iu = -16 mA | Iv = -48 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=1987 | ch1=1981
-MSC@SAC-TP:/speed 200
-speed set: cmd=200 (max=1000) -> duty=20%
-MSC@SAC-TP:/ibus
-Iu = 1289 mA | Iv = -64 mA
-MSC@SAC-TP:/adcraw
-ADC raw: ch0=2070 | ch1=2002
-MSC@SAC-TP:/speed 300
-speed set: cmd=300 (max=1000) -> duty=30%
-MSC@SAC-TP:/ibus
-Iu = 1095 mA | Iv = 322 mA
-MSC@SAC-TP:/speed 700
-speed set: cmd=700 (max=1000) -> duty=70%
-MSC@SAC-TP:/ibus
-Iu = -1112 mA | Iv = -96 mA
-MSC@SAC-TP:/
-
+Une fois la fonction de calibration implémentée, on affiche `adcraw` + `ibus/current` pour valider l’effet de `cal0` :
 
 <img width="656" height="643" alt="image" src="https://github.com/user-attachments/assets/0f08f765-e637-4f44-8937-59d007501993" />
 
+**Analyse :**
 
+- **Avant `cal0` : offset important**
+  - `adcraw ≈ 1991 / 1982` → tension autour de ~1.6 V (proche de `Uref ≈ 1.65 V`, donc cohérent).
+  - Pourtant `ibus` affiche `Iu = 1676 mA` à “zéro vitesse”  
+    ⇒ le **zéro capteur réel** n’est pas exactement à 1.65 V, donc la formule `(Umes - 1.65)/0.05` produit un courant fictif.
 
-Avant cal0 : On a un gros offset
+- **`cal0 200` : offset trouvé réaliste**
+  - `offU = 53 mV`, `offV = 56 mV`
+  - Ordre de grandeur : `50 mV / 0.05 V/A ≈ 1 A` d’erreur potentielle  
+    ⇒ cohérent avec les ~`1.7 A` observés avant correction (en incluant bruit + offsets cumulés).
 
-adcraw ~ 1991 / 1982 → ça correspond à ~1.60 V (normal autour de 1.65 V)
+- **Après `cal0` : le zéro est ramené proche de 0**
+  - `Iu = -16 mA`, `Iv = -48 mA`  
+    ⇒ il reste seulement quelques dizaines de mA (bruit, quantification ADC, offset résiduel).
 
-mais ibus donne Iu = 1676 mA (≈ 1.7 A) alors qu'on est à “zéro vitesse”
-Ça veut dire : le “zéro capteur” n’est pas exactement à 1.65 V, donc la formule (Umes - 1.65)/0.05 nous sort un faux courant.
+- **Quand on change le duty : courants signés**
+  - `speed 200 / 300` : `Iu` devient positif (~1.1–1.3 A)
+  - `speed 700` : `Iu` devient négatif (~ -1.1 A)  
+    ⇒ signe cohérent avec une mesure référencée à `Uref` (selon le sens instantané du courant dans la phase et le pilotage).
 
-al0 200 : l’offset trouvé est réaliste
-
-offU=53mV, offV=56mV
-50 mV d’erreur sur un capteur à 0.05 V/A = 1 A d’erreur potentielle.
-Donc ça colle avec les ~1.7 A affichés avant correction
-
-Après cal0 : le zéro est (presque) bon
-
-Iu = -16 mA, Iv = -48 mA
-(quelques dizaines de mA d’erreur résiduelle = bruit + quantification ADC + offset restant).
-
-Quand on change le duty : on voit des courants “signés”
-à speed 200 / 300 : Iu devient positif (~1.1–1.3 A)
-à speed 700 : Iu devient négatif (~ -1.1 A)
