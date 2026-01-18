@@ -583,3 +583,21 @@ s_last_cnt = cnt;
 s_rpm  = (int32_t)delta * 6000 / (int32_t)ENCODER_COUNTS_PER_REV;
 s_mrpm = (int32_t)delta * 6000000 / (int32_t)ENCODER_COUNTS_PER_REV;
 
+### Problèmes observés et interprétation
+
+Lors des premiers tests, on a observé :
+
+- des vitesses parfois **négatives** puis **positives** à consigne fixe ;
+- des valeurs parfois **très grandes** et **instables**.
+
+**Causes plausibles (fréquentes en pratique) :**
+
+- **Sens de comptage / inversion A-B**
+  - si les canaux **A** et **B** sont inversés, le signe de `Δcount` s’inverse ;
+  - selon le bruit ou des fronts parasites, le sens peut alors “osciller”.
+
+- **Parasites / rebonds sur les signaux A/B**
+  - câbles, masses, couplages PWM → **faux fronts** → comptage erratique ;
+  - problème accentué si les entrées sont longues, mal référencées, ou **non filtrées**.
+
+FIN
